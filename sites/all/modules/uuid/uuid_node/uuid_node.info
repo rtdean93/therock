@@ -1,0 +1,14 @@
+name = UUID Nodes
+description = UUID handler for nodes.
+core = 7.x
+package = uuid
+
+dependencies[] = uuid
+dependencies[] = node
+
+; Information added by drupal.org packaging script on 2011-05-15
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "uuid"
+datestamp = "1305420374"
+

@@ -1,0 +1,230 @@
+<?php
+
+/**
+* @file
+* A module that lists links to recent content.
+*/
+
+/**
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function bobby_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#bobby":
+      return '<p>'.  t("Displays links to posts created recently.") .'</p>';
+      break;
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function bobby_block_info() {
+  $blocks['bobby'] = array(
+    'info' => t('Current posts'), //The name that will appear in the block list.
+    'cache' => DRUPAL_CACHE_PER_ROLE, //Default
+  );
+  return $blocks;
+}
+
+/**
+ * Custom content function.
+ *
+ * Sets beginning and end dates, retrieves posts from database
+ * saved in that time period.
+ *
+ * @param $display
+ *   Whether called by block or page, which need different numbers of posts.
+ * @return
+ *   A result set of the targeted posts.
+ */
+function bobby_contents($display){
+  //Get today's date.
+  $today = getdate();
+  //Calculate midnight a week ago.
+  $start_time = mktime(0, 0, 0,$today['mon'],($today['mday'] - 7), $today['year']);
+  //Get all posts from one week ago to the present.
+  $end_time = time();
+  //Maximum number of posts to show, set in configuration form.
+  $max_num = variable_get('bobby_max', 3);
+
+  //Use Database API to retrieve current posts.
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title', 'created'))
+    ->condition('status', 1) //Published.
+    ->condition('created', array($start_time, $end_time), 'BETWEEN')
+    ->orderBy('created', 'DESC'); //Most recent first.
+
+  if ($display == 'block'){
+    //Restrict the range if it's a block.
+    $query->range(0, $max_num);
+  }//Now proceeds to execute.
+  //If called by page, query proceeds directly to execute().
+
+  return $query->execute();
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * Prepares the contents of the block(s).
+ */
+function bobby_block_view($delta = '') {
+  switch($delta){
+    case 'bobby':
+      $block['subject'] = t('Current posts');
+      if(user_access('access content')){
+        //Use our custom function to retrieve data and
+        //identify request source as block.
+        $result = bobby_contents('block');
+        //Array to contain items for the block to render.
+        $items = array();
+        //Iterate over the resultset and format as links.
+        foreach ($result as $node){
+          $items[] = array(
+            'data' => l($node->title, 'node/' . $node->nid),
+          );
+        }
+
+        if (empty($items)) { //No content in the last week.
+          $block['content'] = t('No posts available.');
+        }
+        else {
+          //Pass data through theme function.
+          $block['content']['posts'] = array(
+            '#theme' => 'item_list__bobby__block',
+            '#items' => $items,
+          );
+          //Add a link to the page for more entries.
+          $block['content']['more'] = array(
+            '#theme' => 'more_link__bobby',
+            '#url' => 'bobby',
+            '#title' => t('See the full list of current posts.'),
+          );
+        }
+      }
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function bobby_permission(){
+  return array(
+    'access bobby content' => array(
+      'title' => t('Access content for the Current posts module'),
+    )
+  );
+}
+
+
+/**
+ * Implements hook_menu().
+ *
+ * Menu items are automatically translated, and should not
+ * be wrapped in t().
+ */
+function bobby_menu() {
+  $items = array();
+
+  $items['admin/config/content/bobby'] = array(
+    'title' => 'Current posts',
+    'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bobby_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['bobby'] = array(
+    'title' => 'Current posts',
+    'page callback' => '_bobby_page',
+    'access arguments' => array('access bobby content'),
+    'type' => MENU_CALLBACK, //Will not appear in any menu.
+  );
+
+  return $items;
+}
+
+/**
+ * Form function, called by drupal_get_form()
+ * in bobby_menu().
+ */
+function bobby_form($form, &$form_state) {
+  $form['bobby_max'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum number of posts'),
+    '#default_value' => variable_get('bobby_max', 3),
+    '#size' => 2,
+    '#maxlength' => 2,
+    '#description' => t('The maximum number of links to display in the block.'),
+    '#required' => TRUE,
+  );
+  //Takes care of providing submit button and user messages.
+  return system_settings_form($form);
+}
+
+/**
+ * Implements validation from the Form API.
+ *
+ * The function name is created in a similar way to a hook,
+ * by appending '_validate' to the name of the form, as defined by
+ * the function above and passed to drupal_get_form in bobby_menu().
+ *
+ * @param $form
+ *   A structured array containing the elements and properties of the form.
+ * @param $form_state
+ *   An array that stores information about the form's current state
+ *   during processing.
+ */
+function bobby_form_validate($form, &$form_state){
+  $max_num = $form_state['values']['bobby_max'];
+  if (!is_numeric($max_num)){
+    form_set_error('bobby_max', t('You must enter an integer for the maximum number of posts to display.'));
+  }
+  elseif ($max_num <= 0){
+    form_set_error('bobby_max', t('Maximum number of posts to display must be positive.'));
+  }
+}
+
+/**
+ * Custom page callback function, declared in bobby_menu().
+ */
+function _bobby_page() {
+  drupal_set_title('Current posts');
+  $result = bobby_contents('page');
+  //Array to contain items for the block to render.
+  $items = array();
+  //Iterate over the resultset and format as links.
+  foreach ($result as $node){
+    $items[] = array(
+    'data' => l($node->title, 'node/' . $node->nid),
+    );
+  }
+
+  if (empty($items)) { //No content in the last week.
+    $page_array['bobby_arguments'] = array(
+      //Title serves as page subtitle
+      '#title' => t('All posts from the last week'),
+      '#markup' => t('No posts available.'),
+    );
+    return $page_array;
+  }
+  else {
+    $page_array['bobby_arguments'] = array(
+      '#title' => t('All posts from the last week'),
+      '#items' => $items,
+      //Theme function includes theme hook suggestion.
+      '#theme' => 'item_list__bobby',
+    );
+    return $page_array;
+  }
+}

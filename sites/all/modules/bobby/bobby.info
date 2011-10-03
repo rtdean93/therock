@@ -1,0 +1,5 @@
+name = Bobby
+description = A test module
+
+core = 7.x
+files[] = bobby.test

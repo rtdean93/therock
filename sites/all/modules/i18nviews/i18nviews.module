@@ -1,0 +1,154 @@
+<?php
+
+/**
+ * @file
+ * Views support for Internationalization (i18n) package
+ *
+ * This module translates some views strings on the fly using i18n string system
+ *
+ * @author Miro Dietiker, 2011
+ * @author Jose A. Reyero, 2007
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function i18nviews_help($path, $arg) {
+  switch ($path) {
+    case 'admin/modules#description' :
+      $output = '<p>'. t('Supports translation for views strings: title, header, footer...') .'</p>';
+      $output .= '<p>'. t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) .'</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implementation of hook_locale().
+ */
+function i18nviews_locale($op = 'groups') {
+  switch ($op) {
+    case 'groups':
+      return array('views' => t('Views'));
+    case 'info':
+      // Only when i18nstrings is used as views localization plugin
+      if (variable_get('views_localization_plugin', 'core') == 'i18nstrings') {
+        $info['views']['refresh callback'] = 'i18nviews_locale_refresh';
+        $info['views']['format'] = TRUE;
+        return $info;
+      }
+      break;
+  }
+}
+
+/**
+ * Refresh views locales, 3.x version
+ */
+function i18nviews_locale_refresh() {
+  $views = views_get_all_views();
+  foreach ($views as $view) {
+    $view->save_locale_strings();
+  }
+  return TRUE; // Completed successfully
+}
+
+/**
+ * Field handler for taxonomy term fields.
+ *
+ * Remake of views_handler_field_allterms with term name translation.
+ *
+ * TODO CHECK
+ */
+function i18nviews_views_handler_field_allterms($fieldinfo, $fielddata, $value, $data) {
+  if ($fieldinfo['vocabulary']) {
+    $terms = taxonomy_node_get_terms_by_vocabulary($data->nid, $fieldinfo['vocabulary']);
+  }
+  else {
+    $terms = taxonomy_node_get_terms($data->nid);
+  }
+  // Translate all these terms.
+  _i18ntaxonomy_translate_terms($terms);
+
+  if ($fielddata['options'] == 'nolink') {
+    foreach ($terms as $term) {
+      $links[] = check_plain($term->name);
+    }
+    $links = !empty($links) ? implode(' | ', $links) : '';
+  }
+  else {
+    $node = new stdClass();
+    $node->taxonomy = $terms;
+    $links = theme('links', taxonomy_link('taxonomy terms', $node));
+  }
+  return $links;
+}
+
+/**
+ * Implementation of hook_views_api().
+ */
+function i18nviews_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+    'path' => drupal_get_path('module', 'i18nviews') . '/includes',
+  );
+}
+
+/**
+ * Return the Views fields that should be translated.
+ *
+ * @return
+ *   Array of field names.
+ */
+function _i18nviews_display_fields() {
+  return array('title', 'header', 'footer', 'empty');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function i18nviews_menu() {
+  $items['admin/structure/views/view/%views_ui_cache/translate'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18nviews_translate_tab_access',
+    'page callback' => 'i18nviews_translate_tab_page',
+    'page arguments' => array(4),
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+    'weight' => 10,
+    'file' => 'i18nviews.pages.inc',
+  );
+  $items['admin/structure/views/view/%views_ui_cache/translate/%language'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18nviews_translate_tab_access',
+    'page callback' => 'i18nviews_translate_tab_page',
+    'page arguments' => array(4, 6),
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+    'file' => 'i18nviews.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Menu access callback function.
+ *
+ * Views editors required to have both views and locale admin.
+ */
+function i18nviews_translate_tab_access() {
+  return user_access('translate interface') && user_access('administer views');
+}
+
+/**
+ * Find the location source for a certain expression.
+ */
+function i18nviews_locale_source($translation, $textgroup, $language = NULL) {
+  if (!isset($language)) {
+    $language = $GLOBALS['language']->language;
+  }
+  $select = db_select('locales_source', 'ls');
+  $select->innerJoin('locales_target', 'lt', '(ls.lid = lt.lid AND lt.translation = :translation AND lt.language = :language AND ls.textgroup = :textgroup )', array(
+      ':translation' => $translation,
+      ':language' => $language,
+      ':textgroup' => $textgroup,
+  ));
+  $select->fields('ls', array('source'));
+  return $select->execute()->fetchObject();
+}

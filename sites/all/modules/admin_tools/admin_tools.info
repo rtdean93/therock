@@ -1,0 +1,17 @@
+name = Admin Tools
+description = Provides integration of the admin_menu flush cache features in the Admin module without having Admin Menu installed.
+package = Administration
+core = 7.x
+
+files[] = admin_tools.module
+
+dependencies[] = menu
+dependencies[] = admin
+
+
+; Information added by drupal.org packaging script on 2011-02-25
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "admin_tools"
+datestamp = "1298618807"
+

@@ -1,0 +1,35 @@
+
+/****************************/
+/* LOCAL CSS                */
+/****************************/
+
+/* Put your custom CSS and CSS overrides in this file and  */
+/* rename it local.css.  By restricting your CSS changes   */
+/* to local.css, your changes will not be overwritten when */
+/* upgrading to a new version of this theme.  You can also */
+/* use a local-rtl.css file for the equivalent in RTL.     */
+
+/* Steps to activate local.css:                       */
+/* 1. Add your custom CSS to this file                */
+/* 2. Rename this file to local.css                   */
+/* 3. Clear cached data at admin/settings/performance */
+
+views-field views-field-field-registrationurl {
+background: white url(../images/buttons.png) 0 0 repeat-x;
+border: 1px solid #E4E4E4;
+border-bottom: 1px solid #B4B4B4;
+border-left-color: #D2D2D2;
+border-right-color: #D2D2D2;
+color: #3A3A3A;
+cursor: pointer;
+font-size: 0.929em;
+font-weight: normal;
+text-align: center;
+margin-bottom: 1em;
+margin-right: 0.6em;
+padding: 4px 17px;
+-khtml-border-radius: 15px;
+-moz-border-radius: 20px;
+-webkit-border-radius: 15px;
+border-radius: 15px;
+}

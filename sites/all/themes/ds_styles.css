@@ -1,0 +1,118 @@
+.STYLE_float_left, .STYLE_float_left * {
+	float: left;
+	padding-right: 15px;
+}
+
+.STYLE_float_right, .STYLE_float_right * {
+	float: right;
+	padding-left: 15px;
+}
+
+.STYLE_img_float_left img {
+	float: left;
+	padding-right: 15px;
+}
+
+.STYLE_img_float_left_scale300, .STYLE_img_float_left_scale300 img {
+	float: left;
+	max-width: 300px;
+	max-height: 300px;
+	height: auto;
+	width: auto;
+	padding-right: 15px;
+}
+
+.STYLE_img_float_left_scale200, .STYLE_img_float_left_scale200 img {
+	float: left;
+	max-width: 200px;
+	max-height: 200px;
+	height: auto;
+	width: auto;
+	padding-right: 15px;
+}
+
+.STYLE_img_float_left_scale150, .STYLE_img_float_left_scale150 img {
+	float: left;
+	max-width: 150px;
+	max-height: 150px;
+	height: auto;
+	width: auto;
+	padding-right: 15px;
+}
+
+.STYLE_img_float_right img {
+	float: right;
+	padding-left: 15px;
+}
+
+.STYLE_img_float_right_scale300, .STYLE_img_float_right_scale300 img {
+	float: right;
+	max-width: 300px;
+	max-height: 300px;
+	height: auto;
+	width: auto;
+	padding-left: 15px;
+}
+
+.STYLE_img_float_right_scale150, .STYLE_img_float_right_scale150 img {
+	float: right;
+	max-width: 150px;
+	max-height: 150px;
+	height: auto;
+	width: auto;
+	padding-left: 15px;
+}
+
+.STYLE_author_float_left {
+	float: left;
+	padding-right: 7px;
+	margin-right: 7px;
+	border-right: 1px solid #D6D6D6;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.STYLE_date_float_left {
+	float: left;
+	padding-right: 7px;
+	margin-right: 7px;
+	border-right: 1px solid #D6D6D6;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.STYLE_width_300, .STYLE_width_300 * {
+	width: 300px;
+	height: auto;
+}
+
+.STYLE_width_150, .STYLE_width_150 * {
+	width: 150px;
+	height: auto;
+}
+
+.STYLE_jwplayer_float_left, .STYLE_jwplayer_float_left * {
+	float: left;
+	margin: 0px;
+	padding-right: 10px;
+}
+
+.STYLE_jwplayer_float_left_scale400, .STYLE_jwplayer_float_left_scale400 * {
+	float: left;
+	width: 400px;
+	height: 300px;
+	margin: 0px;
+	padding-right: 10px;
+}
+
+.STYLE_jwplayer_float_right, .STYLE_jwplayer_float_right * {
+	float: right;
+	margin: 0px;
+}
+
+.STYLE_jwplayer_float_right_scale400, .STYLE_jwplayer_float_right_scale400 * {
+	float: right;
+	width: 400px;
+	height: 300px;
+	margin: 0px;
+}

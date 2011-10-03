@@ -1,0 +1,16 @@
+
+name = QPCache
+package = QueryPath
+description = An XML caching layer for QueryPath or other tools.
+core = 7.x
+php = 5.2
+requires[] = querypath
+files[] = qpcache.info
+files[] = qpcache.install
+files[] = qpcache.module
+; Information added by drupal.org packaging script on 2011-02-25
+version = "7.x-2.x-dev"
+core = "7.x"
+project = "querypath"
+datestamp = "1298620023"
+

@@ -1,0 +1,76 @@
+<div id="ccb_groups">
+  <form action="<?php echo $_SERVER['PHP_SELF'] ?>">
+    <table>
+      <thead>
+        <tr>
+          <th>Sort By Location</th>
+          <th>Sort By Day</th>
+          <th>Sort By Group</th>
+          <th colspan="2"></th>
+        </tr>
+      </thead>
+      <tr>
+        <td>
+          <select name="area_id">
+            <option value=""></option>
+            <?php select_options( $area_id, 'area_id' ) ?>
+          </select>
+        </td>
+        <td>
+          <select name="meet_day_id">
+            <option value=""></option>
+            <?php select_options( $meet_day_id, 'meet_day_id' ) ?>
+          </select>
+        </td>
+        <td>
+          <select name="type_id">
+            <option value=""></option>
+            <?php select_options( $type_id, 'type_id' ) ?>
+          </select>
+        </td>
+        <td>
+          <input type="submit" value="Search For Groups">
+        </td>
+        <td>
+          <button value="yes" name="show-all">Show All Groups</button>
+        </td>
+      </tr>
+    </table>
+  </form>
+  <table>
+    <thead>
+      <tr>
+        <td></td>
+        <th>Title &amp; Description</th>
+        <th>Location &amp; Date</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php
+      foreach ( $groups as $group ) {
+        ?>
+        <tr>
+          <td></td>
+          <td>
+            <strong><?php echo $group['name'] ?></strong>
+            <p><?php echo $group['description'] ?></p>
+          </td>
+          <td class="time-and-location">
+            <span class="location"><?php echo $group['area'] ?></span>
+            <?php
+              if ( $group['day'] || $group['time'] ) {
+            ?>
+            <span class="time-date">
+              <?php echo join( ' - ', array( $group['day'], $group['time'] ) ) ?>
+            </span>
+            <?php
+              }
+            ?>
+          </td>
+        </tr>
+        <?php
+      }
+    ?>
+    </tbody>
+  </table>
+  </div>

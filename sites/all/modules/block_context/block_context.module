@@ -1,0 +1,406 @@
+<?php
+
+include 'block_context.inc';
+
+/************************************
+ * BLOCK CONTEXT
+ *
+ * Manage blocks by their context
+ * by Maedi Prichard
+ *
+ * http://drupal.org/project/block_context
+ *
+ ************************************/
+ 
+/**
+ * Implements hook_theme()
+ *
+ * Telling Drupal about the theme function and template file
+ * @used-by block_context_preprocess_block_admin_display_form()
+ */
+ 
+function block_context_theme() {
+  return array(
+    'block_context_admin_display_form' => array(
+      'template' => 'block-context-admin-display-form',
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter()
+ *
+ * Add our re-assign block feature on submit
+ */
+ 
+function block_context_form_alter(&$form, &$form_state, $form_id)
+{
+  switch($form_id)
+  {	
+    case 'block_admin_display_form' :
+    
+    $form['#submit'][] = 'block_context_admin_display_form_submit';
+    $form['#submit'] = array_reverse($form['#submit']);
+  
+    // dpm($form_state);
+    // dpm(debug_backtrace());
+    
+    break;		
+  }
+}
+
+function block_context_admin_display_form($form, &$form_state) {
+
+ // dpm('form');
+ // dpm($form);
+ // dpm('form_state');
+ // dpm($form_state);
+ 
+}
+
+/**
+ * Pre-Processes variables for block-admin-display-form.tpl.php
+ * Then use custom template: block-context-admin-display-form.tpl.php
+ *
+ * The $vars array contains the following arguments:
+ * - $form
+ *
+ * @see block-admin-display.tpl.php (block module)
+ * @see theme_hook_suggestions()
+ */
+ 
+function block_context_preprocess_block_admin_display_form(&$vars) {
+
+  // Store Paths
+  
+  $sections = array(); 
+  add_menu($sections, menu_main_menu()); 
+       
+  // Crunch Data
+  
+  foreach($vars['block_listing'] as $region_key => $region) {
+      
+    foreach($vars['block_listing'][$region_key] as $block_key => $block) {
+          
+      // load block
+      $id = explode('_', $block_key);
+	  $block = block_load($id[0], $id[1]);
+	  
+	  // if block has paths, and paths not hidden paths
+	  if(isset($block->pages) && $block->visibility = 1) {
+	  
+	    // load block paths
+	    $paths = textarea_to_paths($block->pages);
+	    
+	    // add unique paths to sections array	  
+        foreach($paths as $key => $path) {
+        
+          add_path($sections, $path);
+        }
+      } 
+    }
+  }
+
+  // Alter Block Listing
+  
+  foreach($vars['block_listing'] as $region_key => $region) {
+      
+    foreach($vars['block_listing'][$region_key] as $block_key => $block) {  
+    
+      // Load Block and Menu Paths
+      
+      // $block_key is in form 'module_delta'      
+      $id = explode('_', $block_key);
+	  $block = block_load($id[0], $id[1]);
+	  	  
+	  if(isset($block->pages)) {
+	  
+	    // load block paths	  
+	    $block_paths = array();
+	    $block_paths = preg_split("/[\s,]+/", $block->pages);	    
+	    	    
+	    // filter blocks by sections
+	    if(arg(3) != '') {
+	    
+	      if(!arg_matches_paths($block_paths)) {
+	      
+	        $vars['block_listing'][$region_key][$block_key]->visibility = -1;
+	        
+	      } else {
+	      
+	      	 $vars['block_listing'][$region_key][$block_key]->visibility = 0;
+	      }
+	      
+	    } else {
+	    
+	      $vars['block_listing'][$region_key][$block_key]->visibility = 1;
+	    }
+	    
+	  } else {
+	  
+	    $vars['block_listing'][$region_key][$block_key]->visibility = -1;
+	  }
+	  
+      // add UI options menu
+      $vars['block_listing'][$region_key][$block_key]->context_select = ui_paths_dropdown($sections, $block_key, $block_paths);
+
+    }
+  }
+
+  // User Interface / Theme
+
+  $vars['theme_hook_suggestions'][] = 'block_context_admin_display_form';
+  $vars['block_context']['ui_paths_menu'] = ui_paths_menu($sections);
+}
+
+/**
+ * Save and Replace paths
+ *
+ * existing and new paths are saved in $_POST
+ */
+
+function block_context_admin_display_form_submit($form, &$form_state) {
+
+  // dpm($_POST);
+
+  foreach($_POST['blocks'] as $block_key => $item) {
+
+    // store last known block path
+    static $redirect_path;
+        
+    // whether user has selected new path
+    static $changed = FALSE;
+            
+    // load block
+    $id = explode('_', $block_key);
+    $module = $id[0];
+    $delta = $id[1];
+    $block = block_load($module, $delta);
+    
+    // load user submitted path
+    if(isset($item['path'])) {
+             
+      // get all existing paths
+	  $paths = textarea_to_paths($block->pages);
+	  
+	  
+	  // CONVERT ACTIONS IF BLOCK PATH HAS BEEN CHANGED
+	  
+	  // compare new path with old path (end of array / top of stack)
+	  if( $item['path'] != end($paths) ) {
+	  
+	    // stop All from '' triggering change
+	    if($item['path'] != 'All' && $paths != '') {
+	  
+	      $changed = TRUE;
+          $redirect_path = $item['path'];
+          
+          // replace previous block path with new (last element is only ever edited)
+          array_pop($paths);
+          $paths[] = $item['path'];
+        
+          // format for Drupal blocks 'Pages' textarea
+          $pages = paths_to_textarea($paths);
+        
+          // replace original 'Pages' entry with updated paths
+          block_context_block_update($module, $delta, $pages);
+          
+          // user messages
+          if($block->title != '') {
+          
+            drupal_set_message($block->title . ' block moved to "' . $item['path'] . '".');
+            
+          } else {
+          
+            drupal_set_message($block_key . ' block moved to "' . $item['path'] . '".');
+          }
+        }
+	  }
+    }
+  }
+  
+  if($changed) {
+
+    redirect_to_path_context($redirect_path);
+  }
+}
+
+
+/**
+ * Update Block
+ *
+ */
+ 
+function block_context_block_update($module, $delta, $pages) {
+
+  db_update('block')
+  ->fields(array(
+    'pages' => $pages,
+    'visibility' => 1,
+  ))
+  ->condition('module', $module, '=')
+  ->condition('delta', $delta, '=')
+  ->execute();
+}
+
+function redirect_to_path_context($path) {
+
+  if($path == 'All') {
+  
+    drupal_goto('admin/structure/block/');
+  
+  } else {
+  
+    drupal_goto('admin/structure/block/page/' . $path);
+  }
+}
+
+
+function textarea_to_paths($paths) {
+
+  // convery Drupal's new-line paths format to array
+  return preg_split("/[\s,]+/", $paths);
+}
+
+/**
+ * Paths to Textarea
+ *
+ * $paths (array of paths)
+ *
+ * return: a string in Drupal's block paths format
+ */
+
+function paths_to_textarea($paths) {
+
+  // stop form 'All' option from making changes
+  if($paths[0] == 'All') {
+  
+    return '';
+  }
+  
+  elseif(count($paths) == 1 ) {
+  
+    return $paths[0];
+  
+  } else {
+  
+    // convert array to Drupal format string
+    return implode("\n", $paths); 
+  }
+}
+ 
+
+/**
+ * UI Paths Context Menu
+ *
+ * $paths (array of main_menu and block paths)
+ * $paths_selected (array )
+ */
+ 
+function ui_paths_menu($paths) {
+
+  $all_selected = false;
+
+  if(node_path() == '/') {
+    
+    $menu = '<li><a class="selected" href="/admin/structure/block/">All</a></li>';
+    
+    $all_selected = true;
+  
+  } else {
+  
+    $menu = '<li><a href="/admin/structure/block/">All</a></li>';
+  }
+  
+  // Page links
+  foreach($paths as $path => $title) {
+  
+    // Select link if path is current
+    if(node_path() == $path || alias_path() == html_entity_decode($path)) {
+    
+      $menu = $menu . '<li><a class="selected" href="/admin/structure/block/page/' . $path . '">' . $title . '</a></li>';
+    }
+   
+    // Deselect link if path is not current
+    else {
+  
+      $menu = $menu . '<li><a href="/admin/structure/block/page/' . $path . '">' . $title . '</a></li>';
+    }
+  }
+        
+  return $menu;
+}
+
+/**
+ * UI Paths Dropdown Menu
+ *
+ * $sections		array of main_menu and block paths
+ * $block_key		in the form module_delta
+ * $block_paths		current paths this block is assigned to
+ */
+
+function ui_paths_dropdown($sections, $block_key, $block_paths) {
+
+  $menu = '<option>All</option>';
+  
+  if($block_paths[0] != '') {
+  
+    foreach($sections as $path => $title) {
+    
+      $selected = false;
+    
+    
+      if($path == end($block_paths)) {
+      
+        $selected = true;
+        
+        // dpm($sections);
+        // dpm($block_paths);
+      }
+      
+      if($selected) {
+    
+        $menu = $menu . '<option selected="' . $path . '">' . $path . '</option>';
+      }
+      else {
+
+        $menu = $menu . '<option value="' . $path . '">' . $path . '</option>';
+      }
+    }
+  }
+  else {
+  
+    foreach($sections as $path => $title) {
+    
+      $menu = $menu . '<option value="' . $path . '">' . $path . '</option>';  
+    }
+  }
+
+
+  $menu = '<select name="blocks['  .  $block_key  .  '][path]">'  .  $menu  .  '</select>
+  
+   ' . html_paths($block_paths) . '
+  ';
+  return $menu;
+}
+
+function html_paths($paths) {
+  
+  if( count($paths) > 1 ) {
+    
+    array_pop($paths);
+  
+    $html = '';
+  
+    foreach($paths as $path => $title) {
+    
+      $html = $html . '<li>' . $title . '</li>'; 
+    
+    }
+    
+    return '<span class="rest-links"><ul><li><em>As well as:</em></li>' . $html . '</ul></span>';
+  }
+  
+  else return NULL;
+}

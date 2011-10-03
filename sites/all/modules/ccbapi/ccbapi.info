@@ -1,0 +1,5 @@
+name = Church Community Builder API
+description = Integrates the Church Community Builder API
+
+core = 7.x
+files[] = ccbapi.test
