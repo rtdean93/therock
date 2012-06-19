@@ -35,19 +35,13 @@ function module_filter_menu() {
     'page arguments' => array('module_filter_settings'),
     'file' => 'module_filter.admin.inc'
   );
-  $items['module_filter/autocomplete'] = array(
-    'access arguments' => array('administer site configuration'),
-    'page callback' => 'module_filter_autocomplete',
-    'file' => 'module_filter.admin.inc',
-    'type' => MENU_CALLBACK
-  );
   return $items;
 }
 
 /**
  * Implementation of hook_form_FORM_ID_alter().
  */
-function module_filter_form_system_modules_alter(&$form, $form_state) {
+function module_filter_form_system_modules_alter(&$form, &$form_state, $form_id) {
   // Don't alter the form when confirming.
   if (isset($form['confirm'])) {
     return;
@@ -61,15 +55,6 @@ function module_filter_form_system_modules_alter(&$form, $form_state) {
     '#type' => 'textfield',
     '#title' => t('Filter list')
   );
-
-  $form['module_filter_submit'] = array (
-        '#value' => t('Save configuration'),
-        '#type' => 'submit',
-  );
-
-  if (variable_get('module_filter_autocomplete', 0)) {
-    $form['module_filter']['name']['#autocomplete_path'] = 'module_filter/autocomplete';
-  }
 
   $form['module_filter']['show'] = array(
     '#type' => 'checkboxes',
@@ -93,12 +78,25 @@ function module_filter_form_system_modules_alter(&$form, $form_state) {
       )
     );
 
+    $all = t('All');
+    $tab_counts = array($all => array('id' => 'all', 'enabled' => 0, 'total' => 0));
     $form['#packages'] = array();
     foreach (element_children($form['modules']) as $package) {
       // Add the package to $form['#packages']. Tabs are built from this.
       $form['#packages'][$package] = $package;
 
+      if (!isset($tab_counts[$package])) {
+        $tab_counts[$package] = array('enabled' => 0, 'total' => 0);
+      }
+
       foreach (element_children($form['modules'][$package]) as $module) {
+        $tab_counts[$all]['total']++;
+        $tab_counts[$package]['total']++;
+        if (!empty($form['modules'][$package][$module]['enable']['#default_value'])) {
+          $tab_counts[$all]['enabled']++;
+          $tab_counts[$package]['enabled']++;
+        }
+
         $modules[$module] = $form['modules'][$package][$module];
         $modules[$module]['#package'] = $package;
         $modules[$module]['#parents'] = array('modules', $package, $module);
@@ -106,10 +104,13 @@ function module_filter_form_system_modules_alter(&$form, $form_state) {
     }
 
     // Sort the array of modules alphabetically.
-    ksort($modules);
+    uasort($modules, 'module_filter_sort_modules_by_display_name');
 
     // Replace the $form['modules'] with our $modules array.
     $form['modules'] = $modules;
+
+    // Add our $tab_counts array to the form.
+    $form['#tab_counts'] = $tab_counts;
   }
 
   $form['#theme'] = 'module_filter_system_modules';
@@ -133,6 +134,13 @@ function module_filter_theme() {
       'file' => 'module_filter.theme.inc'
     )
   );
+}
+
+function module_filter_sort_modules_by_display_name($a, $b) {
+  if (is_array($a) && is_array($b) && isset($a['#package'], $b['#package'])) {
+    return strcasecmp($a['name']['#markup'], $b['name']['#markup']);
+  }
+  return 0;
 }
 
 function module_filter_get_id($text) {

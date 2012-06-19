@@ -27,6 +27,13 @@ function theme_module_filter_system_modules($variables) {
   if (variable_get('module_filter_tabs', 1)) {
     drupal_add_css(drupal_get_path('module', 'module_filter') .'/css/module_filter_tab.css');
     drupal_add_js(drupal_get_path('module', 'module_filter') .'/js/module_filter_tab.js');
+
+    drupal_add_js(array('moduleFilter' => array('visualAid' => variable_get('module_filter_visual_aid', 1))), 'setting');
+
+    if (variable_get('module_filter_dynamic_save_position', 0)) {
+      drupal_add_js(drupal_get_path('module', 'module_filter') .'/js/dynamic_position.js');
+    }
+
     $form['module_filter']['#size'] = 45;
     $output .= theme('module_filter_system_modules_tabs', $form);
   }
@@ -91,20 +98,25 @@ function theme_module_filter_modules_table($variables) {
 function theme_module_filter_system_modules_tabs($variables) {
   $form = $variables['form'];
 
+  $count_enabled = variable_get('module_filter_count_enabled', 1);
+
   // Display packages.
-  $tabs = array('all' => '<li class="active"><a id="all-tab" class="project-tab" href="#all">' . t('All') . '</a></li>');
+  $all = t('All');
+  $all_count = ($count_enabled) ? '<span class="counts">' . t('!enabled of !total', array('!enabled' => $form['#tab_counts'][$all]['enabled'], '!total' => $form['#tab_counts'][$all]['total'])) . '</span>' : '';
+  $tabs = array('all' => '<li class="active"><a id="all-tab" class="project-tab" href="#all">' . $all . $all_count . '</a></li>');
   foreach ($form['#packages'] as $package) {
     $id = module_filter_get_id($package);
 
-    $tabs[$id] = '<li><a id="' . $id . '-tab" class="project-tab" href="#' . str_replace('-', '_', $id) . '">' . $package . '</a></li>';
+    $count = ($count_enabled) ? '<span class="counts">' . t('!enabled of !total', array('!enabled' => $form['#tab_counts'][$package]['enabled'], '!total' => $form['#tab_counts'][$package]['total'])) . '</span>' : '';
+    $tabs[$id] = '<li><a id="' . $id . '-tab" class="project-tab" href="#' . str_replace('-', '_', $id) . '">' . $package . $count . '</a></li>';
   }
 
   $output = '<div id="module-filter-wrapper">';
   $output .= '<div id="module-filter-left">';
   $output .= '<div id="module-filter-tabs"><ul>'. implode($tabs) . '</ul></div>';
-  $output .= '</div>';
+  $output .= '<div id="module-filter-submit">' . drupal_render($form['actions']) . '</div></div>';
   $output .= '<div id="module-filter-right"><div id="module-filter-squeeze">' . drupal_render($form['module_filter']);
-  $output .= '<div class="module-filter-submit">' . drupal_render($form['module_filter_submit']) . '</div>' . drupal_render($form['modules']) . '<div class="module-filter-submit">' . drupal_render($form['actions']) . '</div></div></div>';
+  $output .= drupal_render($form['modules']) . '</div></div>';
   $output .= '<div class="clear-block"></div>';
   $output .= '</div>';
   $output .= drupal_render_children($form);

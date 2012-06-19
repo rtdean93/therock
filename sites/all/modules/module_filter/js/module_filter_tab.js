@@ -4,6 +4,8 @@
   Drupal.ModuleFilter.textFilter = '';
   Drupal.ModuleFilter.timeout;
   Drupal.ModuleFilter.tabs = {};
+  Drupal.ModuleFilter.enabling = {};
+  Drupal.ModuleFilter.disabling = {};
 
   Drupal.behaviors.moduleFilter = {
     attach: function() {
@@ -49,6 +51,17 @@
         Drupal.ModuleFilter.showUnavailable = $(this).is(':checked');
         Drupal.ModuleFilter.filter($('input[name="module_filter[name]"]').val());
       });
+
+      if (Drupal.settings.moduleFilter.visualAid == 1) {
+        $('table.package tbody td.checkbox input').change(function() {
+          if ($(this).is(':checked')) {
+            Drupal.ModuleFilter.updateVisualAid('enable', $(this).parents('tr'));
+          }
+          else {
+            Drupal.ModuleFilter.updateVisualAid('disable', $(this).parents('tr'));
+          }
+        });
+      }
 
       // Check for anchor.
       var url = document.location.toString();
@@ -150,26 +163,103 @@
 
   Drupal.ModuleFilter.Tab.prototype.displayRows = function() {
     var flip = 'odd';
-
-    if (Drupal.ModuleFilter.activeTab.id == 'all-tab' && Drupal.ModuleFilter.status == 'all') {
-      $('table.package tbody tr').each(function(i) {
-        $(this).removeClass('odd even');
+    var selector = (Drupal.ModuleFilter.activeTab.id == 'all-tab') ? 'table.package tbody tr' : 'table.package tbody tr.' + this.id + '-content';
+    $('table.package tbody tr').hide();
+    $('table.package tbody tr').removeClass('odd even');
+    $(selector).each(function(i) {
+      if (Drupal.ModuleFilter.visible($('td.checkbox input', $(this)))) {
         $(this).addClass(flip);
         flip = (flip == 'odd') ? 'even' : 'odd';
-      });
-      $('table.package tbody tr').show();
+        $(this).show();
+      }
+    });
+  }
+
+  Drupal.ModuleFilter.Tab.prototype.updateEnabling = function(amount) {
+    this.enabling = this.enabling || 0;
+    this.enabling += amount;
+    if (this.enabling == 0) {
+      delete(this.enabling);
+    }
+  }
+
+  Drupal.ModuleFilter.Tab.prototype.updateDisabling = function(amount) {
+    this.disabling = this.disabling || 0;
+    this.disabling += amount;
+    if (this.disabling == 0) {
+      delete(this.disabling);
+    }
+  }
+
+  Drupal.ModuleFilter.Tab.prototype.updateVisualAid = function() {
+    var visualAid = '';
+    if (this.enabling != undefined) {
+      visualAid += '<span class="enabling">' + Drupal.t('+@count', { '@count': this.enabling }) + '</span>';
+    }
+    if (this.disabling != undefined) {
+      visualAid += '<span class="disabling">' + Drupal.t('-@count', { '@count': this.disabling }) + '</span>';
+    }
+
+    if (!$('span.visual-aid', $(this.element)).size() && visualAid != '') {
+      $(this.element).prepend('<span class="visual-aid"></span>');
+    }
+
+    $('span.visual-aid', $(this.element)).empty().append(visualAid);
+  }
+
+  Drupal.ModuleFilter.updateVisualAid = function(type, row) {
+    // Find row class.
+    var classes = row.attr('class').split(' ');
+    for (var i in classes) {
+      // Remove '-content' so we can use as id.
+      var id = classes[i].substring(0, classes[i].length - 8);
+      if (Drupal.ModuleFilter.tabs[id] != undefined) {
+        break;
+      }
+    }
+
+    if (Drupal.ModuleFilter.activeTab.id == 'all-tab') {
+      var allTab = Drupal.ModuleFilter.activeTab;
+      var projectTab = Drupal.ModuleFilter.tabs[id];
     }
     else {
-      var selector = (Drupal.ModuleFilter.activeTab.id == 'all-tab') ? 'table.package tbody tr' : 'table.package tbody tr.' + this.id + '-content';
-      $('table.package tbody tr').hide();
-      $('table.package tbody tr').removeClass('odd even');
-      $(selector).each(function(i) {
-        if (Drupal.ModuleFilter.visible($('td.checkbox input', $(this)))) {
-          $(this).addClass(flip);
-          flip = (flip == 'odd') ? 'even' : 'odd';
-          $(this).show();
-        }
-      });
+      var allTab = Drupal.ModuleFilter.tabs['all-tab'];
+      var projectTab = Drupal.ModuleFilter.activeTab;
     }
+
+    var name = $('td label strong', row).text();
+    switch (type) {
+      case 'enable':
+        if (Drupal.ModuleFilter.disabling[id + name] != undefined) {
+          delete(Drupal.ModuleFilter.disabling[id + name]);
+          allTab.updateDisabling(-1);
+          projectTab.updateDisabling(-1);
+          row.removeClass('disabling');
+        }
+        else {
+          Drupal.ModuleFilter.enabling[id + name] = name;
+          allTab.updateEnabling(1);
+          projectTab.updateEnabling(1);
+          row.addClass('enabling');
+        }
+        break;
+      case 'disable':
+        if (Drupal.ModuleFilter.enabling[id + name] != undefined) {
+          delete(Drupal.ModuleFilter.enabling[id + name]);
+          allTab.updateEnabling(-1);
+          projectTab.updateEnabling(-1);
+          row.removeClass('enabling');
+        }
+        else {
+          Drupal.ModuleFilter.disabling[id + name] = name;
+          allTab.updateDisabling(1);
+          projectTab.updateDisabling(1);
+          row.addClass('disabling');
+        }
+        break;
+    }
+
+    allTab.updateVisualAid();
+    projectTab.updateVisualAid();
   }
 })(jQuery);
