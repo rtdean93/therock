@@ -13,8 +13,7 @@ class FeedsQueryPathParser extends FeedsParser {
    */
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     // Setup mappings so they can be used in variable replacement.
-    $mappings = $source->importer->processor->config['mappings'];
-    $mappings = $this->filterMappings($mappings);
+    $mappings = $this->getOwnMappings();
 
     // Set source config, if it's empty get config from importer.
     $this->source_config = $source->getConfigFor($this);
@@ -55,6 +54,8 @@ class FeedsQueryPathParser extends FeedsParser {
     foreach ($context as $item) {
       $parsed_item = $variables = array();
       foreach ($this->source_config['sources'] as $source => $query) {
+        // Variable substitution.
+        $query = strtr($query, $variables);
         $parsed = $this->parseSourceElement($item, $query, $source);
         // Avoid null values.
         if (isset($parsed)) {
@@ -68,7 +69,9 @@ class FeedsQueryPathParser extends FeedsParser {
           $parsed_item[$source] = $parsed;
         }
       }
-      $result->items[] = $parsed_item;
+      if (!empty($parsed_item)) {
+        $result->items[] = $parsed_item;
+      }
     }
     return $result;
   }
@@ -261,8 +264,8 @@ class FeedsQueryPathParser extends FeedsParser {
    */
   public function sourceFormValidate(&$values) {
     $values = $values['querypath'];
-    asort($values);
-    asort($this->config);
+    ksort($values);
+    ksort($this->config);
     if ($values === $this->config) {
       $values = array();
       return;
@@ -275,6 +278,7 @@ class FeedsQueryPathParser extends FeedsParser {
    */
   public function configFormValidate(&$values) {
     $config = FALSE;
+    $mappings = $this->getOwnMappings();
     $doc = '<html></html>';
     if (isset($values['querypath'])) {
       $values = $values['querypath'];
@@ -291,17 +295,28 @@ class FeedsQueryPathParser extends FeedsParser {
       }
       form_set_error($elem, $e->getMessage());
     }
-    foreach ($values['sources'] as $key => &$source) {
-      $source = trim($source);
+    foreach ($values['sources'] as $key => &$query) {
+      $query = trim($query);
       try {
-        qp($doc, $source);
+        qp($doc, $query);
       }
       catch (CSSParseException $e) {
-        $elem = 'feeds][FeedsQueryPathParser][querypath][sources][';
-        if ($config) {
-          $elem = 'querypath][sources][';
+        // Check for variable substitution.
+        $variable_present = FALSE;
+        // Our variable substitution options can cause syntax errors, check
+        // if we're doing that.
+        foreach ($mappings as $target) {
+          if (strpos($query, '{' . $target . '}') !== FALSE) {
+            $variable_present = TRUE;
+          }
         }
-        form_set_error($elem . $key, $e->getMessage());
+        if (!$variable_present) {
+          $elem = 'feeds][FeedsQueryPathParser][querypath][sources][';
+          if ($config) {
+            $elem = 'querypath][sources][';
+          }
+          form_set_error($elem . $key, $e->getMessage());
+        }
       }
     }
   }
@@ -310,10 +325,11 @@ class FeedsQueryPathParser extends FeedsParser {
   * Override parent::getMappingSources().
   */
   public function getMappingSources() {
-    $mappings = $this->filterMappings(feeds_importer($this->id)->processor->config['mappings']);
+    $mappings = $this->getOwnMappings();
     $next = 0;
     if (!empty($mappings)) {
-      $last_mapping = end(array_keys($mappings));
+      $keys = array_keys($mappings);
+      $last_mapping = end($keys);
       $next = explode(':', $last_mapping);
       $next = $next[1] + 1;
     }
@@ -323,6 +339,11 @@ class FeedsQueryPathParser extends FeedsParser {
         'description' => t('Allows you to configure a CSS selector expression that will populate this field.'),
       ),
     ) + parent::getMappingSources();
+  }
+
+  protected function getOwnMappings() {
+    $importer_config = feeds_importer($this->id)->getConfig();
+    return $this->filterMappings($importer_config['processor']['config']['mappings']);
   }
 
   /**

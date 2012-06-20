@@ -173,10 +173,13 @@ DrupalContextBlockEditor.prototype.initBlocks = function(blocks) {
   var self = this;
   this.blocks = blocks;
   blocks.each(function() {
+    if($(this).hasClass('context-block-empty')) {
+      $(this).removeClass('context-block-hidden');
+    }
     $(this).addClass('draggable');
     $(this).prepend($('<a class="context-block-handle"></a>'));
     $(this).prepend($('<a class="context-block-remove"></a>').click(function() {
-      $(this).parents('div.block').eq(0).fadeOut('medium', function() {
+      $(this).parent ('.block').eq(0).fadeOut('medium', function() {
         $(this).remove();
         self.updateBlocks();
       });
@@ -196,7 +199,7 @@ DrupalContextBlockEditor.prototype.updateBlocks = function() {
   var browser = $('div.context-block-browser');
 
   // For all enabled blocks, mark corresponding addables as having been added.
-  $('div.block, div.admin-block').each(function() {
+  $('.block, .admin-block').each(function() {
     var bid = $(this).attr('id').split('block-')[1]; // Ugh.
     $('#context-block-addable-'+bid, browser).draggable('disable').addClass('context-block-added').removeClass('context-block-addable');
   });
@@ -210,7 +213,7 @@ DrupalContextBlockEditor.prototype.updateBlocks = function() {
 
   // Mark empty regions.
   $(this.regions).each(function() {
-    if ($('div.block:has(a.context-block)', this).size() > 0) {
+    if ($('.block:has(a.context-block)', this).size() > 0) {
       $(this).removeClass('context-block-region-empty');
     }
     else {
@@ -230,8 +233,8 @@ DrupalContextBlockEditor.prototype.updateRegion = function(event, ui, region, op
     case 'out':
       if (
         // jQuery UI 1.8
-        $('div.draggable-placeholder', region).size() === 1 &&
-        $('div.block:has(a.context-block)', region).size() == 0
+        $('.draggable-placeholder', region).size() === 1 &&
+        $('.block:has(a.context-block)', region).size() == 0
         // jQuery UI 1.6
         // $('div.draggable-placeholder', region).size() === 0 &&
         // $('div.block:has(a.context-block)', region).size() == 1 &&
@@ -326,13 +329,13 @@ DrupalContextBlockEditor.prototype.setState = function() {
   */
 DrupalContextBlockEditor.prototype.disableTextSelect = function() {
   if ($.browser.safari) {
-    $('div.block:has(a.context-block):not(:has(input,textarea))').css('WebkitUserSelect','none');
+    $('.block:has(a.context-block):not(:has(input,textarea))').css('WebkitUserSelect','none');
   }
   else if ($.browser.mozilla) {
-    $('div.block:has(a.context-block):not(:has(input,textarea))').css('MozUserSelect','none');
+    $('.block:has(a.context-block):not(:has(input,textarea))').css('MozUserSelect','none');
   }
   else if ($.browser.msie) {
-    $('div.block:has(a.context-block):not(:has(input,textarea))').bind('selectstart.contextBlockEditor', function() { return false; });
+    $('.block:has(a.context-block):not(:has(input,textarea))').bind('selectstart.contextBlockEditor', function() { return false; });
   }
   else {
     $(this).bind('mousedown.contextBlockEditor', function() { return false; });
@@ -370,7 +373,7 @@ DrupalContextBlockEditor.prototype.editStart = function(editor, context) {
   this.editor.addClass('context-editing');
 
   this.disableTextSelect();
-  this.initBlocks($('div.block:has(a.context-block.edit-'+context+')'));
+  this.initBlocks($('.block:has(a.context-block.edit-'+context+')'));
   this.initRegions($('a.context-block-region').parent());
   this.updateBlocks();
 
@@ -383,7 +386,7 @@ DrupalContextBlockEditor.prototype.editStart = function(editor, context) {
       dropOnEmpty: true,
       placeholder: 'draggable-placeholder',
       forcePlaceholderSize: true,
-      items: '> div.block:has(a.context-block.editable)',
+      items: '> .block:has(a.context-block.editable)',
       handle: 'a.context-block-handle',
       start: function(event, ui) { self.scriptFix(event, ui, editor, context); },
       stop: function(event, ui) { self.addBlock(event, ui, editor, context); },
@@ -419,6 +422,9 @@ DrupalContextBlockEditor.prototype.editFinish = function() {
   // Remove UI elements.
   $(this.blocks).each(function() {
     $('a.context-block-handle, a.context-block-remove', this).remove();
+    if($(this).hasClass('context-block-empty')) {
+      $(this).addClass('context-block-hidden');
+    }
     $(this).removeClass('draggable');
   });
   this.regions.sortable('destroy');

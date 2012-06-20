@@ -114,7 +114,7 @@ function context_update_6001() {
         if (!isset($context->block)) {
           $context->block = array();
         }
-        $block->bid = $block->module ."_". $block->delta;
+        $block->bid = $block->module . "_" . $block->delta;
         $context->block[$block->bid] = $block;
       }
       // Clear out identifier
@@ -288,6 +288,8 @@ function context_update_6304() {
  */
 
 function context_update_7000() {
+  drupal_load('module', 'ctools');
+  drupal_load('module', 'context');
   $updated = array();
   $contexts = context_load(NULL, TRUE);
   foreach ($contexts as $c) {
@@ -357,7 +359,7 @@ function context_migrate_api_3(&$ret, $contexts) {
           if ($old_key === 'block') {
             foreach ($context->block as $block) {
               $block = (array)$block;
-              $new['reactions']['block']['blocks'][$block['module'] .'-'. $block['delta']] = $block;
+              $new['reactions']['block']['blocks'][$block['module'] . '-' . $block['delta']] = $block;
             }
           }
           else {

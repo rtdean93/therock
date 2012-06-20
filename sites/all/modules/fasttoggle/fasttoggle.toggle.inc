@@ -33,10 +33,9 @@ function fasttoggle_node_option($node, $option) {
       // Output the new status for the updated link text on AJAX changes
       if (isset($_POST['js']) && $_POST['js']) {
         drupal_add_http_header('Content-Type', 'text/javascript; charset=utf-8');
-        $parsed = drupal_parse_url(check_plain(request_uri()));
-        $path = $parsed['path'];
+        $path = request_path();
         echo ajax_render(array(
-          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($node->$option)], substr($path, 1), FASTTOGGLE_FORMAT_HTML, $option . '_' . $node->nid, $newClass)),
+          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($node->$option)], $path, FASTTOGGLE_FORMAT_HTML, $option . '_' . $node->nid, $newClass)),
         ));
         exit;
       }
@@ -93,10 +92,9 @@ function fasttoggle_user_option($user, $option) {
       // Output the new option for the updated link text on AJAX changes
       if (isset($_POST['js']) && $_POST['js']) {
         drupal_add_http_header('Content-Type', 'text/javascript; charset=utf-8');
-        $parsed = drupal_parse_url(check_plain(request_uri()));
-        $path = $parsed['path'];
+        $path = request_path();
         echo ajax_render(array(
-          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($user->$option)], substr($path, 1), FASTTOGGLE_FORMAT_HTML, $option . '_' . $user->uid, $newClass)),
+          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($user->$option)], $path, FASTTOGGLE_FORMAT_HTML, $option . '_' . $user->uid, $newClass)),
         ));
         exit;
       }
@@ -154,10 +152,9 @@ function fasttoggle_comment_option($comment, $option) {
       // Output the new status for the updated link text on AJAX changes
       if (isset($_POST['js']) && $_POST['js']) {
         drupal_add_http_header('Content-Type', 'text/javascript; charset=utf-8');
-        $parsed = drupal_parse_url(check_plain(request_uri()));
-        $path = $parsed['path'];
+        $path = request_path();
         echo ajax_render(array(
-          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($comment->$option)], substr($path, 1), FASTTOGGLE_FORMAT_HTML, $option . '_' . $comment->cid, $newClass)),
+          ajax_command_replace('.' . $oldClass, fasttoggle($options[$option][intval($comment->$option)], $path, FASTTOGGLE_FORMAT_HTML, $option . '_' . $comment->cid, $newClass)),
         ));
         exit;
       }

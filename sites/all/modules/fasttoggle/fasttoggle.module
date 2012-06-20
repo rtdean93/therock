@@ -41,7 +41,7 @@ define('FASTTOGGLE_FORMAT_FORM', 0x0002);
 function fasttoggle_menu() {
   $items = array();
 
-  $items['admin/settings/fasttoggle'] = array(
+  $items['admin/config/system/fasttoggle'] = array(
     'title' => 'Fasttoggle',
     'description' => 'Configure what fast toggling options are available.',
     'page callback' => 'drupal_get_form',
@@ -90,6 +90,9 @@ function fasttoggle_permission() {
       'title' => t('Administer Fasttoggle'),
     ),
     'promote posts' => array(
+      'title' => t('Promote posts to front page'),
+    ),
+    'make posts sticky' => array(
       'title' => t('Make posts sticky'),
     ),
     'moderate comments' => array(
@@ -113,7 +116,8 @@ function fasttoggle_user_view($account, $view_mode, $langcode) {
   $settings = variable_get('fasttoggle_user_settings', array('status' => TRUE));
 
   if ($settings['status'] && (user_access('administer users') || user_access('moderate users'))) {
-    $link = array_shift(fasttoggle_link('user', $account, TRUE));
+    $links = fasttoggle_link('user', $account, TRUE);
+    $link = array_shift($links);
     if ($link) {
       $account->content['fasttoggle'] = array(
         '#markup' => t('Status') . ': ' . l($link['title'], $link['href'], $link),
@@ -127,7 +131,7 @@ function fasttoggle_user_view($account, $view_mode, $langcode) {
  */
 function fasttoggle_help($path, $arg) {
   switch ($path) {
-    case 'admin/settings/fasttoggle':
+    case 'admin/config/system/fasttoggle':
       return t('Configure what fast toggling options are available.');
       break;
   }
