@@ -30,3 +30,6 @@
 [20-Jun-2012 06:50:58] PHP Fatal error:  Class 'views_handler_field_entity' not found in /home/gignetso/public_html/therock/sites/all/modules/views/modules/node/views_handler_field_node_link.inc on line 7
 [20-Jun-2012 06:51:32] PHP Fatal error:  Allowed memory size of 67108864 bytes exhausted (tried to allocate 71 bytes) in /home/gignetso/public_html/therock/includes/bootstrap.inc on line 977
 [20-Jun-2012 06:52:10] PHP Fatal error:  Allowed memory size of 67108864 bytes exhausted (tried to allocate 896545 bytes) in /home/gignetso/public_html/therock/sites/all/modules/feeds/libraries/http_request.inc on line 165
+[20-Jun-2012 07:05:14] PHP Fatal error:  Allowed memory size of 67108864 bytes exhausted (tried to allocate 71 bytes) in /home/gignetso/public_html/therock/includes/menu.inc on line 358
+[20-Jun-2012 07:25:15] PHP Fatal error:  Allowed memory size of 67108864 bytes exhausted (tried to allocate 896565 bytes) in /home/gignetso/public_html/therock/sites/all/modules/feeds/libraries/http_request.inc on line 165
+[20-Jun-2012 07:25:55] PHP Fatal error:  Allowed memory size of 67108864 bytes exhausted (tried to allocate 71 bytes) in /home/gignetso/public_html/therock/includes/bootstrap.inc on line 977
